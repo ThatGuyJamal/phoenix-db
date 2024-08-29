@@ -1,0 +1,7 @@
+[package]
+name = "phoenix"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+phoenix-common = { path = "../phoenix-common" }
