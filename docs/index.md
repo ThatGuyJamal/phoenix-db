@@ -62,13 +62,19 @@ This can allow us to save time allocating space for operations when writing to t
 ## Implementation
 
 1. Build the TCP protocol
-2. Build the TCP server
-3. Build the TCP client
-4. Build the CLI server
-5. Build the rust client
-6. Write tests
-7. Write documentation
-8. Release Alpha version
+2. Build the TCP server  
+   2.1 Command handling  
+   2.2 TLS support
+3. Build the CLI server  
+   3.1 Support all native commands
+   3.2 Support Repl (Read Evaluate Print Loop)
+4. Build the TCP client  
+   4.1 Command API wrapper  
+   4.2 Good error handling  
+   4.3 Support Different languages (eg. Rust, JavaScript, Python)
+5. Write tests
+6. Write documentation
+7. Release Alpha version
 
 ## Release
 
