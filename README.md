@@ -1,2 +1,13 @@
-# phoenix-db
-A key-value storage database built by CS student
+# Pheonix Database
+
+This is the Pheonix Database Server.
+
+## Usage
+
+```shell
+cargo install phoenix-db
+```
+
+## Examples
+
+Coming soom

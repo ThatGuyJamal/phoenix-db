@@ -1,9 +1,0 @@
-[package]
-name = "phoenix-server"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-tokio = { workspace = true, features = ["full"] }
-
-phoenix-common = { path = "../phoenix-common" }

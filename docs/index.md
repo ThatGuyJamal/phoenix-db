@@ -51,23 +51,27 @@ This can allow us to save time allocating space for operations when writing to t
 
 # Commands
 
-- `SET key value` - Set the value of a key
-- `GET key` - Get the value of a key
-- `DEL key` - Delete the value of a key
+- `INSERT key value` - Set the value of a key
+- `LOOKUP key` - Get the value of a key
+- `DELETE key` - Delete the value of a key
 
 - `LIST` - List all keys
+- `CREATE` - Create a new database
+- `DESTROY` - Destroy a database
 - `EXIT` - Exit the database
 - `HELP` - List all commands
 
 ## Implementation
 
 1. Build the TCP protocol
+   1.1 Data versioning
 2. Build the TCP server  
    2.1 Command handling  
    2.2 TLS support
 3. Build the CLI server  
    3.1 Support all native commands
    3.2 Support Repl (Read Evaluate Print Loop)
+   3.3 Support DB passwords using a local file
 4. Build the TCP client  
    4.1 Command API wrapper  
    4.2 Good error handling  
