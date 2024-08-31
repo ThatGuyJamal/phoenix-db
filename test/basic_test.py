@@ -1,30 +1,32 @@
 import socket
 
-# Server address and port
-HOST = '127.0.0.1'
-PORT = 8080  
-
 def send_command(command):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((HOST, PORT))
-        s.sendall(command.encode())  # Send the command to the server
-        response = s.recv(1024).decode()  # Receive the response
+        s.connect(('127.0.0.1', 8080))
+        s.sendall(command.encode())
+        response = s.recv(1024).decode()
         return response
 
 def main():
-    # Example commands
-    insert_command = "INSERT my_key boottyi3323"
-    get_command = "LOOKUP my_key"
+    commands = [
+        "INSERT <type>list</type> <key>my_list</key> <items><item>123</item><item>45.67</item><item>true</item><item>hello world!</item></items>",
+        "LOOKUP my_list",
 
-    # Send INSERT command
-    print("Sending:", insert_command)
-    insert_response = send_command(insert_command)
-    print("Response:", insert_response)
+        "INSERT my_int_key 123 int",
+        "INSERT my_float_key 456.78 float",
+        "INSERT my_text_key 'Hello World' text",
+        "INSERT my_bool_key true bool",
+        'INSERT my_list 123,45.67,true,hello world list'
+        "LOOKUP my_int_key",
+        "LOOKUP my_float_key",
+        "LOOKUP my_text_key",
+        "LOOKUP my_bool_key"
+    ]
 
-    # Send GET command
-    print("Sending:", get_command)
-    get_response = send_command(get_command)
-    print("Response:", get_response)
+    for cmd in commands:
+        print(f"Sending: {cmd}")
+        response = send_command(cmd)
+        print(f"Response: {response}\n")
 
 if __name__ == "__main__":
     main()

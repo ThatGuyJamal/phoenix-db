@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use futures::future::BoxFuture;
 use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 
 use crate::commands::insert::insert_command;
@@ -19,6 +20,8 @@ pub struct DbEngine
     pub metadata: DbMetadata,
 }
 
+pub type Database = Arc<RwLock<HashMap<DbKey, DbValue>>>;
+
 /// Other information about data strored in the database
 #[derive(PartialEq, Debug)]
 pub struct DbMetadata
@@ -28,12 +31,6 @@ pub struct DbMetadata
     password: String,
     debug_mode: bool,
 }
-
-/// The main database type
-pub type Database = Arc<RwLock<HashMap<DbKey, DbValue>>>;
-
-pub type DbKey = String;
-pub type DbValue = usize;
 
 impl Default for DbMetadata
 {
@@ -46,6 +43,20 @@ impl Default for DbMetadata
             debug_mode: false,
         }
     }
+}
+
+///  A database key
+pub type DbKey = String;
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum DbValue
+{
+    Integer(i64),
+    Float(f64),
+    Text(String),
+    Boolean(bool),
+    List(Vec<DbValue>),
+    Map(HashMap<String, DbValue>),
+    Void, // Used to represent a null value
 }
 
 // Command function type
