@@ -1,10 +1,11 @@
 use std::io::Error;
 
-use futures::future::{BoxFuture, FutureExt};
+use futures::future::BoxFuture;
+use futures::FutureExt;
 
 use crate::protocol::{Database, DbKey, DbValue, NetActions, NetResponse};
 
-pub fn lookup_command(
+pub fn delete_command(
     key: Option<DbKey>,
     _value: Option<DbValue>,
     db: Database,
@@ -13,24 +14,25 @@ pub fn lookup_command(
     async move {
         let response = match key {
             Some(k) => {
-                let db_read = db.read().await;
-                match db_read.get(&k) {
-                    Some(value) => NetResponse {
+                let mut db_write = db.write().await;
+                if db_write.remove(&k).is_some() {
+                    NetResponse {
                         action: NetActions::Command,
-                        value: Some(value.to_owned()),
+                        value: Some("OK".to_string().into()),
                         error: None,
-                    },
-                    None => NetResponse {
-                        action: NetActions::Command,
+                    }
+                } else {
+                    NetResponse {
+                        action: NetActions::Error,
                         value: None,
-                        error: None,
-                    },
+                        error: Some(format!("Key '{}' not found.", k)),
+                    }
                 }
             }
             None => NetResponse {
                 action: NetActions::Error,
                 value: None,
-                error: Some("No key provided for lookup.".to_string()),
+                error: Some("No key provided for delete.".to_string()),
             },
         };
 

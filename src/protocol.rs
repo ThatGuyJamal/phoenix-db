@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::RwLock;
 
+use crate::commands::delete::delete_command;
 use crate::commands::insert::insert_command;
 use crate::commands::lookup::lookup_command;
 
@@ -61,9 +62,19 @@ pub struct NetCommand<'a>
 
 /// The data sent back to a connected client after a command
 #[derive(Serialize, Deserialize, Debug)]
-pub struct NetResponse {
+pub struct NetResponse
+{
+    pub action: NetActions,
     pub value: Option<DbValue>,
     pub error: Option<String>,
+}
+
+/// Actions ran on the network
+#[derive(Serialize, Deserialize, Debug)]
+pub enum NetActions
+{
+    Command,
+    Error,
 }
 
 // Command function type
@@ -74,6 +85,7 @@ pub static COMMANDS: Lazy<HashMap<&'static str, CommandFn>> = Lazy::new(|| {
     let mut map = HashMap::new();
     map.insert("INSERT", insert_command as CommandFn);
     map.insert("LOOKUP", lookup_command as CommandFn);
+    map.insert("DELETE", delete_command as CommandFn);
     // Add more commands here
     map
 });

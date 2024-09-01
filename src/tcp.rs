@@ -1,7 +1,7 @@
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
-use crate::protocol::{Database, NetCommand, NetResponse};
+use crate::protocol::{Database, NetActions, NetCommand, NetResponse};
 
 pub async fn handle_stream(mut stream: TcpStream, db: Database) -> Result<(), String>
 {
@@ -38,15 +38,17 @@ pub async fn handle_stream(mut stream: TcpStream, db: Database) -> Result<(), St
                     eprintln!("Failed to deserialize command: {}", e);
                     // Send an error response to the client
                     let error_response = NetResponse {
+                        action: NetActions::Error,
                         value: None,
                         error: Some(format!("Failed to deserialize command: {}", e)),
                     };
                     let error_response_json = serde_json::to_string(&error_response).unwrap_or_else(|e| {
                         serde_json::to_string(&NetResponse {
+                            action: NetActions::Error,
                             value: None,
                             error: Some(format!("Serialization error: {}", e)),
                         })
-                            .unwrap()
+                        .unwrap()
                     });
                     if let Err(e) = stream.write_all(error_response_json.as_bytes()).await {
                         eprintln!("Failed to write error response to stream: {}", e);

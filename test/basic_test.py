@@ -1,5 +1,6 @@
 import json
 import socket
+from typing import Any
 
 # Define server connection settings
 SERVER_HOST = '127.0.0.1'
@@ -7,7 +8,7 @@ SERVER_PORT = 8080
 
 
 # Define the commands
-def insert_command(key: str, value: str) -> dict:
+def insert_command(key: str, value: Any) -> dict:
     return {
         "name": "INSERT",
         "key": key,
@@ -18,6 +19,14 @@ def insert_command(key: str, value: str) -> dict:
 def lookup_command(key: str) -> dict:
     return {
         "name": "LOOKUP",
+        "key": key,
+        "value": None
+    }
+
+
+def delete_command(key: str) -> dict:
+    return {
+        "name": "DELETE",
         "key": key,
         "value": None
     }
@@ -56,16 +65,46 @@ def send_command(command: dict) -> None:
         print(f"An error occurred: {e}")
 
 
-# Test the insert and lookup commands
+# Test the insert, lookup, and delete commands
 if __name__ == "__main__":
-    # Test inserting a key-value pair
-    print("Testing INSERT command...")
-    send_command(insert_command("username", "john_doe"))
+    # Test inserting various types of data
+    print("Testing INSERT commands with various data types...")
 
-    # Test looking up a key
-    print("\nTesting LOOKUP command...")
-    send_command(lookup_command("username"))
+    # Insert string
+    send_command(insert_command("key_string", "string_value"))
 
-    # Test looking up a non-existent key
-    print("\nTesting LOOKUP for non-existent key...")
-    send_command(lookup_command("non_existent_key"))
+    # Insert integer
+    send_command(insert_command("key_integer", 123))
+
+    # Insert float
+    send_command(insert_command("key_float", 123.45))
+
+    # Insert list
+    send_command(insert_command("key_list", [1, 2, 3, 4]))
+
+    # Insert dictionary
+    send_command(insert_command("key_dict", {"a": 1, "b": 2}))
+
+    # Test looking up the inserted keys
+    print("\nTesting LOOKUP commands...")
+    send_command(lookup_command("key_string"))
+    send_command(lookup_command("key_integer"))
+    send_command(lookup_command("key_float"))
+    send_command(lookup_command("key_list"))
+    send_command(lookup_command("key_dict"))
+
+    # Test deleting keys
+    print("\nTesting DELETE commands...")
+    send_command(delete_command("key_string"))
+    send_command(delete_command("key_integer"))
+    send_command(delete_command("key_float"))
+    send_command(delete_command("key_list"))
+    send_command(delete_command("key_dict"))
+
+    # Test looking up deleted keys
+    print("\nTesting LOOKUP for deleted keys...")
+    send_command(lookup_command("key_string"))
+    send_command(lookup_command("key_integer"))
+    send_command(lookup_command("key_float"))
+    send_command(lookup_command("key_list"))
+    send_command(lookup_command("key_dict"))
