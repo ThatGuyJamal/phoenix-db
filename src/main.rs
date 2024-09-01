@@ -7,7 +7,7 @@ use std::error::Error;
 use std::sync::Arc;
 
 use protocol::{DbEngine, DbMetadata};
-use tcp::handle_connection;
+use tcp::handle_stream;
 use tokio::net::TcpListener;
 use tokio::sync::{mpsc, RwLock};
 
@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn Error>>
 
     tokio::spawn(async move {
         while let Some((stream, db)) = rx.recv().await {
-            tokio::spawn(handle_connection(stream, db));
+            tokio::spawn(handle_stream(stream, db));
         }
     });
 

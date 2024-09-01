@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::io::Error;
 use std::sync::Arc;
 
 use futures::future::BoxFuture;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tokio::sync::RwLock;
 
 use crate::commands::insert::insert_command;
@@ -22,7 +24,7 @@ pub struct DbEngine
 
 pub type Database = Arc<RwLock<HashMap<DbKey, DbValue>>>;
 
-/// Other information about data strored in the database
+/// Other information about data stored in the database
 #[derive(PartialEq, Debug)]
 pub struct DbMetadata
 {
@@ -45,22 +47,27 @@ impl Default for DbMetadata
     }
 }
 
-///  A database key
 pub type DbKey = String;
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum DbValue
+pub type DbValue = Value;
+
+/// The command struct that the tcp server expects to compute
+#[derive(Serialize, Deserialize, Debug)]
+pub struct NetCommand<'a>
 {
-    Integer(i64),
-    Float(f64),
-    Text(String),
-    Boolean(bool),
-    List(Vec<DbValue>),
-    Map(HashMap<String, DbValue>),
-    Void, // Used to represent a null value
+    pub name: &'a str,
+    pub key: Option<&'a str>,
+    pub value: Option<DbValue>,
+}
+
+/// The data sent back to a connected client after a command
+#[derive(Serialize, Deserialize, Debug)]
+pub struct NetResponse {
+    pub value: Option<DbValue>,
+    pub error: Option<String>,
 }
 
 // Command function type
-type CommandFn = fn(Vec<String>, Database) -> BoxFuture<'static, String>;
+type CommandFn = fn(Option<DbKey>, Option<DbValue>, Database) -> BoxFuture<'static, Result<NetResponse, Error>>;
 
 // Static command lookup table
 pub static COMMANDS: Lazy<HashMap<&'static str, CommandFn>> = Lazy::new(|| {

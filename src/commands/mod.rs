@@ -1,24 +1,30 @@
-use crate::protocol::{Database, COMMANDS};
+use crate::protocol::{Database, DbKey, DbValue, NetCommand, NetResponse, COMMANDS};
 
 pub mod insert;
 pub mod lookup;
 
-pub async fn handler(command_str: String, db: Database) -> String
+pub async fn handler(command: NetCommand<'_>, db: Database) -> NetResponse
 {
-    // Split the command into parts
-    let parts: Vec<&str> = command_str.trim().split_whitespace().collect();
+    let command_name = command.name.to_uppercase();
+    let key: Option<DbKey> = command.key.map(|k| k.to_string());
+    let value: Option<DbValue> = command.value;
 
-    // Check if the command is valid
-    if parts.is_empty() {
-        return "Invalid command".to_string();
-    }
-
-    let command_name: String = parts[0].to_uppercase();
-    let args: Vec<String> = parts[1..].iter().map(|&s| s.to_string()).collect();
-
-    if let Some(command) = COMMANDS.get(command_name.as_str()) {
-        (command)(args, db).await
+    if let Some(command_handler) = COMMANDS.get(command_name.as_str()) {
+        match command_handler(key, value, db).await {
+            Ok(res) => NetResponse {
+                value: res.value,
+                error: None,
+            },
+            Err(err_msg) => NetResponse {
+                value: None,
+                error: Some(err_msg.to_string()),
+            },
+        }
     } else {
-        "Unknown command".to_string()
+        eprintln!("Unknown command received: {}", command_name);
+        NetResponse {
+            value: None,
+            error: Some("Error: Unknown command.".to_string()),
+        }
     }
 }
