@@ -35,16 +35,15 @@ Note: Right now the database is not production ready by any means and is only us
 - `Client` - A client that connects to the database
 - `Server` - A server that runs the database
 
-- `Key` - A unique identifier for a type of data
-- `Value` - The data stored in the database
-
 # Commands
 
 - `INSERT key value` - Set the value of a key
+    - `INSERT *` - Allows multiple data inserts in one request using an array
 - `LOOKUP key` - Get the value of a key
+    - `LOOPUP *` - Gets all the keys in the database
 - `DELETE key` - Delete the value of a key
+    - `DELETE *` - Deletes all the data in the database
 
-- `LIST` - List all keys
 - `CREATE` - Create a new database
 - `DESTROY` - Destroy a database
 - `EXIT` - Exit the database
@@ -52,7 +51,7 @@ Note: Right now the database is not production ready by any means and is only us
 
 ## Implementation
 
-1. Build the TCP protocol
+1. Build the TCP protocol  
    1.1 Data versioning
 2. Build the TCP server  
    2.1 Command handling  

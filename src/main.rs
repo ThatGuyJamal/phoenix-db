@@ -1,15 +1,16 @@
 mod commands;
+mod net;
 mod protocol;
-mod tcp;
 
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
 
 use protocol::{DbEngine, DbMetadata};
-use tcp::handle_stream;
 use tokio::net::TcpListener;
 use tokio::sync::{mpsc, RwLock};
+
+use crate::net::handle_stream;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>>

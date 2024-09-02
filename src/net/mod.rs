@@ -60,7 +60,8 @@ pub async fn handle_stream(mut stream: TcpStream, db: Database) -> Result<(), St
     }
 }
 
-async fn send_error_response(stream: &mut TcpStream, error_message: &str) -> Result<(), String> {
+async fn send_error_response(stream: &mut TcpStream, error_message: &str) -> Result<(), String>
+{
     let error_response = NetResponse {
         action: NetActions::Error,
         value: None,

@@ -1,17 +1,10 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::io::Error;
 use std::sync::Arc;
 
-use futures::future::BoxFuture;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::RwLock;
-
-use crate::commands::delete::delete_command;
-use crate::commands::insert::insert_command;
-use crate::commands::lookup::lookup_command;
 
 /// The database engine
 pub struct DbEngine
@@ -56,8 +49,8 @@ pub type DbValue = Value;
 pub struct NetCommand<'a>
 {
     pub name: &'a str,
-    pub key: Option<&'a str>,
-    pub value: Option<DbValue>,
+    pub keys: Option<Vec<&'a str>>,
+    pub values: Option<Vec<DbValue>>,
 }
 
 /// The data sent back to a connected client after a command
@@ -76,16 +69,3 @@ pub enum NetActions
     Command,
     Error,
 }
-
-// Command function type
-type CommandFn = fn(Option<DbKey>, Option<DbValue>, Database) -> BoxFuture<'static, Result<NetResponse, Error>>;
-
-// Static command lookup table
-pub static COMMANDS: Lazy<HashMap<&'static str, CommandFn>> = Lazy::new(|| {
-    let mut map = HashMap::new();
-    map.insert("INSERT", insert_command as CommandFn);
-    map.insert("LOOKUP", lookup_command as CommandFn);
-    map.insert("DELETE", delete_command as CommandFn);
-    // Add more commands here
-    map
-});
