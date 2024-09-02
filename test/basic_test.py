@@ -42,21 +42,21 @@ def parse_net_response(response: str) -> Dict[str, Optional[Union[Any, str]]]:
 
 
 # Send command to server and get response
-def send_command(sock: socket.socket, command: Dict[str, Any]) -> None:
+def send_command(s: socket.socket, command: Dict[str, Any]) -> None:
     try:
         # Serialize the command to JSON
         message = json.dumps(command)
-        sock.sendall(message.encode('utf-8'))
+        s.sendall(message.encode('utf-8'))
 
         # Receive the response from the server
-        response = sock.recv(1024).decode('utf-8')
+        response = s.recv(1024).decode('utf-8')
 
         # Parse and print the response
         response_data = parse_net_response(response)
         print(f"Server Response: {response_data}")
 
-    except Exception as e:
-        print(f"An error occurred while sending command: {e}")
+    except Exception as err:
+        print(f"An error occurred while sending command: {err}")
 
 
 # Test the insert, lookup, and delete commands
