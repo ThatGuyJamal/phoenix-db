@@ -1,7 +1,6 @@
 mod commands;
 mod net;
 mod protocol;
-
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;

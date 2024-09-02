@@ -54,7 +54,7 @@ impl Default for DbMetadata
 }
 
 /// Represents a command sent over the network to be processed by the server.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct NetCommand<'a>
 {
     /// The name of the command.
@@ -66,7 +66,7 @@ pub struct NetCommand<'a>
 }
 
 /// Represents the response sent back to a client after processing a command.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct NetResponse
 {
     /// The action performed, indicating whether the command was successful or if there was an error.
@@ -78,7 +78,7 @@ pub struct NetResponse
 }
 
 /// Enum representing possible network actions in response to commands.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum NetActions
 {
     /// Indicates that a command was processed successfully.

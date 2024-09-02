@@ -90,3 +90,106 @@ pub fn insert_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
     }
     .boxed()
 }
+
+#[cfg(test)]
+mod test
+{
+    use std::collections::HashMap;
+    use std::sync::Arc;
+
+    use serde_json::json;
+    use tokio::sync::RwLock;
+
+    use crate::commands::insert::insert_command;
+    use crate::commands::CommandArgs;
+    use crate::protocol::{Database, NetActions};
+
+    // Helper function to create a new in-memory database
+    fn create_fake_db() -> Database
+    {
+        Arc::new(RwLock::new(HashMap::new()))
+    }
+
+    #[tokio::test]
+    async fn test_single_insert()
+    {
+        let db = create_fake_db();
+        let key = "test_key".to_string();
+        let value = json!("test_value");
+
+        let args = CommandArgs::Single(Some(key.clone()), Some(value.clone()));
+        let response = insert_command(args, db.clone()).await.unwrap();
+
+        // Check that the response indicates success
+        assert_eq!(response.action, NetActions::Command);
+        assert_eq!(response.value, Some("OK".to_string().into()));
+        assert!(response.error.is_none());
+
+        // Check that the value was inserted correctly
+        let db_read = db.read().await;
+        assert_eq!(db_read.get(&key), Some(&value));
+    }
+
+    #[tokio::test]
+    async fn test_single_insert_missing_key()
+    {
+        let db = create_fake_db();
+        let value = json!("test_value");
+
+        let args = CommandArgs::Single(None, Some(value));
+        let response = insert_command(args, db.clone()).await.unwrap();
+
+        // Check that the response indicates an error
+        assert_eq!(response.action, NetActions::Error);
+        assert_eq!(response.value, None);
+        assert_eq!(response.error, Some("No key provided for insert.".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_single_insert_missing_value()
+    {
+        let db = create_fake_db();
+        let key = "test_key".to_string();
+
+        let args = CommandArgs::Single(Some(key), None);
+        let response = insert_command(args, db.clone()).await.unwrap();
+
+        // Check that the response indicates an error
+        assert_eq!(response.action, NetActions::Error);
+        assert_eq!(response.value, None);
+        assert_eq!(response.error, Some("No value provided for insert.".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_bulk_insert()
+    {
+        let db = create_fake_db();
+        let key1 = "key1".to_string();
+        let key2 = "key2".to_string();
+        let value1 = json!("value1");
+        let value2 = json!("value2");
+
+        let args = CommandArgs::Many(vec![
+            crate::commands::ManyParams {
+                key: Some(key1.clone()),
+                value: Some(value1.clone()),
+            },
+            crate::commands::ManyParams {
+                key: Some(key2.clone()),
+                value: Some(value2.clone()),
+            },
+        ]);
+
+        let response = insert_command(args, db.clone()).await.unwrap();
+
+        // Check that the response indicates success
+        assert_eq!(response.action, NetActions::Command);
+        assert_eq!(response.value, Some("OK".to_string().into()));
+        assert!(response.error.is_none());
+
+        // Check that the values were inserted correctly
+        let db_read = db.read().await;
+        assert_eq!(db_read.get(&key1), Some(&value1));
+        assert_eq!(db_read.get(&key2), Some(&value2));
+    }
+}
