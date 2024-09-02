@@ -18,18 +18,15 @@ use crate::protocol::{Database, NetActions, NetCommand, NetResponse};
 /// A `Result` indicating success or failure of handling the stream. Errors are returned as `String`.
 pub async fn handle_stream(mut stream: TcpStream, db: Database) -> Result<(), String>
 {
-    // Obtain the client's address for logging purposes
     let client_addr = stream
         .peer_addr()
         .unwrap_or_else(|_| "unknown address".to_string().parse().unwrap());
 
     println!("Connected to client: {}", client_addr);
 
-    // Buffer to read incoming data from the stream
     let mut buffer = vec![0; 1024];
 
     loop {
-        // Read data from the stream asynchronously
         match stream.read(&mut buffer).await {
             Ok(size) => {
                 if size == 0 {
@@ -70,7 +67,6 @@ pub async fn handle_stream(mut stream: TcpStream, db: Database) -> Result<(), St
             }
             Err(e) => {
                 eprintln!("Failed to read from stream: {}", e);
-                // Send an error response if reading fails
                 send_error_response(&mut stream, &e.to_string()).await?;
                 return Err(format!("Failed to read from stream: {}", e));
             }
