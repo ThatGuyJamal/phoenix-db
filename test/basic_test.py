@@ -11,24 +11,24 @@ SERVER_PORT = 8080
 def insert_command(key: str, value: Any) -> Dict[str, Any]:
     return {
         "name": "INSERT",
-        "key": key,
-        "value": value
+        "keys": [key],
+        "values": [value]
     }
 
 
 def lookup_command(key: str) -> Dict[str, Any]:
     return {
         "name": "LOOKUP",
-        "key": key,
-        "value": None
+        "keys": [key],
+        "values": None
     }
 
 
 def delete_command(key: str) -> Dict[str, Any]:
     return {
         "name": "DELETE",
-        "key": key,
-        "value": None
+        "keys": [key],
+        "values": None
     }
 
 

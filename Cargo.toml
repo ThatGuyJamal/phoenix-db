@@ -1,7 +1,7 @@
 [package]
 name = "phoenix-db"
 description = "Phoenix Database Server"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 repository = "https://github.com/ThatGuyJamal/phoenix-db"
 documentation = "https://docs.rs/phoenix-db"

@@ -1,10 +1,27 @@
-use crate::commands::CommandArgs;
-use crate::protocol::{Database, DbValue, NetActions, NetResponse};
-use futures::future::BoxFuture;
-use futures::FutureExt;
 use std::error::Error;
 
-pub fn delete_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Result<NetResponse, Box<dyn Error>>> {
+use futures::future::BoxFuture;
+use futures::FutureExt;
+
+use crate::commands::CommandArgs;
+use crate::protocol::{Database, DbValue, NetActions, NetResponse};
+
+/// Executes a delete command on the database.
+///
+/// This function handles both single key deletions and bulk deletions based on the provided `CommandArgs`.
+/// It removes the specified key-value pairs from the database and returns a `NetResponse` indicating success or errors.
+///
+/// # Arguments
+///
+/// * `args` - The arguments for the command, which could be a single key or multiple keys for bulk deletion.
+/// * `db` - The database instance used for deletion.
+///
+/// # Returns
+///
+/// A `BoxFuture` that resolves to a `Result` containing a `NetResponse`. The response indicates the success
+/// or failure of the deletion operation.
+pub fn delete_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Result<NetResponse, Box<dyn Error + Send>>>
+{
     async move {
         let response = match args {
             CommandArgs::Single(Some(key), _) => {
@@ -54,5 +71,5 @@ pub fn delete_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
 
         Ok(response)
     }
-        .boxed()
+    .boxed()
 }
