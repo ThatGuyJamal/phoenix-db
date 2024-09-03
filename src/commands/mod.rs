@@ -50,8 +50,11 @@ where
 pub static COMMANDS: Lazy<HashMap<&'static str, Arc<dyn CommandExecutor>>> = Lazy::new(|| {
     let mut map = HashMap::new();
     map.insert("INSERT", Arc::new(insert_command) as Arc<dyn CommandExecutor>);
+    map.insert("INSERT *", Arc::new(insert_command) as Arc<dyn CommandExecutor>);
     map.insert("LOOKUP", Arc::new(lookup_command) as Arc<dyn CommandExecutor>);
+    map.insert("LOOKUP *", Arc::new(lookup_command) as Arc<dyn CommandExecutor>);
     map.insert("DELETE", Arc::new(delete_command) as Arc<dyn CommandExecutor>);
+    map.insert("DELETE *", Arc::new(delete_command) as Arc<dyn CommandExecutor>);
     map
 });
 
@@ -61,11 +64,7 @@ async fn execute_command(command_name: &str, args: CommandArgs, db: Database) ->
 {
     if let Some(command_executor) = COMMANDS.get(command_name) {
         match command_executor.execute(args, db).await {
-            Ok(res) => NetResponse {
-                action: NetActions::Command,
-                value: res.value,
-                error: None,
-            },
+            Ok(res) => res.into(),
             Err(err_msg) => NetResponse {
                 action: NetActions::Error,
                 value: None,
@@ -99,36 +98,6 @@ async fn handle_insert(keys: Option<Vec<DbKey>>, values: Option<Vec<DbValue>>, d
     }
 }
 
-/// Handles the `LOOKUP` command. Requires a single key.
-/// Returns a `NetResponse` indicating the result of the `LOOKUP` command.
-async fn handle_lookup(keys: Option<Vec<DbKey>>, db: Database) -> NetResponse
-{
-    if let Some(key) = keys.and_then(|k| k.into_iter().next()) {
-        execute_command("LOOKUP", CommandArgs::Single(Some(key), None), db).await
-    } else {
-        NetResponse {
-            action: NetActions::Error,
-            value: None,
-            error: Some("Error: Missing key for LOOKUP command.".to_string()),
-        }
-    }
-}
-
-/// Handles the `DELETE` command. Requires a single key.
-/// Returns a `NetResponse` indicating the result of the `DELETE` command.
-async fn handle_delete(keys: Option<Vec<DbKey>>, db: Database) -> NetResponse
-{
-    if let Some(key) = keys.and_then(|k| k.into_iter().next()) {
-        execute_command("DELETE", CommandArgs::Single(Some(key), None), db).await
-    } else {
-        NetResponse {
-            action: NetActions::Error,
-            value: None,
-            error: Some("Error: Missing key for DELETE command.".to_string()),
-        }
-    }
-}
-
 /// Handles the `INSERT *` command, which supports bulk insertion of key-value pairs.
 /// Requires both keys and values to be provided.
 /// Returns a `NetResponse` indicating the result of the bulk `INSERT` command.
@@ -154,6 +123,82 @@ async fn handle_insert_bulk(keys: Option<Vec<DbKey>>, values: Option<Vec<DbValue
     }
 }
 
+/// Handles the `LOOKUP` command. Requires a single key.
+/// Returns a `NetResponse` indicating the result of the `LOOKUP` command.
+async fn handle_lookup(keys: Option<Vec<DbKey>>, db: Database) -> NetResponse
+{
+    if let Some(key) = keys.and_then(|k| k.into_iter().next()) {
+        execute_command("LOOKUP", CommandArgs::Single(Some(key), None), db).await
+    } else {
+        NetResponse {
+            action: NetActions::Error,
+            value: None,
+            error: Some("Error: Missing key for LOOKUP command.".to_string()),
+        }
+    }
+}
+
+/// Handles the `LOOKUP *` command, which supports bulk lookups of multiple keys.
+/// Requires a list of keys to be provided.
+/// Returns a `NetResponse` indicating the result of the bulk `LOOKUP` command.
+async fn handle_lookup_bulk(keys: Option<Vec<DbKey>>, db: Database) -> NetResponse
+{
+    if let Some(keys) = keys {
+        let params: Vec<ManyParams> = keys
+            .into_iter()
+            .map(|key| ManyParams {
+                key: Some(key),
+                value: None,
+            })
+            .collect();
+        execute_command("LOOKUP *", CommandArgs::Many(params), db).await
+    } else {
+        NetResponse {
+            action: NetActions::Error,
+            value: None,
+            error: Some("Error: Missing keys for bulk lookup.".to_string()),
+        }
+    }
+}
+
+/// Handles the `DELETE` command. Requires a single key.
+/// Returns a `NetResponse` indicating the result of the `DELETE` command.
+async fn handle_delete(keys: Option<Vec<DbKey>>, db: Database) -> NetResponse
+{
+    if let Some(key) = keys.and_then(|k| k.into_iter().next()) {
+        execute_command("DELETE", CommandArgs::Single(Some(key), None), db).await
+    } else {
+        NetResponse {
+            action: NetActions::Error,
+            value: None,
+            error: Some("Error: Missing key for DELETE command.".to_string()),
+        }
+    }
+}
+
+/// Handles the `DELETE *` command, which supports bulk deletion of multiple keys.
+/// Requires a list of keys to be provided.
+/// Returns a `NetResponse` indicating the result of the bulk `DELETE` command.
+async fn handle_delete_bulk(keys: Option<Vec<DbKey>>, db: Database) -> NetResponse
+{
+    if let Some(keys) = keys {
+        let params: Vec<ManyParams> = keys
+            .into_iter()
+            .map(|key| ManyParams {
+                key: Some(key),
+                value: None,
+            })
+            .collect();
+        execute_command("DELETE *", CommandArgs::Many(params), db).await
+    } else {
+        NetResponse {
+            action: NetActions::Error,
+            value: None,
+            error: Some("Error: Missing keys for bulk delete.".to_string()),
+        }
+    }
+}
+
 /// Main handler for processing commands.
 /// Matches the command name and delegates to the appropriate handler function.
 /// Returns a `NetResponse` based on the execution result of the command.
@@ -168,6 +213,8 @@ pub async fn handler(command: NetCommand<'_>, db: Database) -> NetResponse
         "LOOKUP" => handle_lookup(keys, db).await,
         "DELETE" => handle_delete(keys, db).await,
         "INSERT *" => handle_insert_bulk(keys, values, db).await,
+        "LOOKUP *" => handle_lookup_bulk(keys, db).await,
+        "DELETE *" => handle_delete_bulk(keys, db).await,
         _ => NetResponse {
             action: NetActions::Error,
             value: None,

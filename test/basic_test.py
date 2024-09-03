@@ -1,6 +1,6 @@
 import json
 import socket
-from typing import Any, Dict, Union, Optional
+from typing import Any, Dict, Union, Optional, List
 
 # Define server connection settings
 SERVER_HOST = '127.0.0.1'
@@ -28,6 +28,30 @@ def delete_command(key: str) -> Dict[str, Any]:
     return {
         "name": "DELETE",
         "keys": [key],
+        "values": None
+    }
+
+
+def bulk_insert_command(keys: List[str], values: List[Any]) -> Dict[str, Any]:
+    return {
+        "name": "INSERT *",
+        "keys": keys,
+        "values": values
+    }
+
+
+def bulk_lookup_command(keys: List[str]) -> Dict[str, Any]:
+    return {
+        "name": "LOOKUP *",
+        "keys": keys,
+        "values": None
+    }
+
+
+def bulk_delete_command(keys: List[str]) -> Dict[str, Any]:
+    return {
+        "name": "DELETE *",
+        "keys": keys,
         "values": None
     }
 
@@ -108,6 +132,24 @@ if __name__ == "__main__":
             send_command(sock, lookup_command("key_float"))
             send_command(sock, lookup_command("key_list"))
             send_command(sock, lookup_command("key_dict"))
+
+            # Test bulk insert command
+            print("Testing BULK INSERT command...")
+            bulk_keys = ["bulk_key_1", "bulk_key_2", "bulk_key_3"]
+            bulk_values = ["bulk_value_1", 456, [7, 8, 9]]
+            send_command(sock, bulk_insert_command(bulk_keys, bulk_values))
+
+            # Test bulk lookup command
+            print("\nTesting BULK LOOKUP command...")
+            send_command(sock, bulk_lookup_command(bulk_keys))
+
+            # Test bulk delete command
+            print("\nTesting BULK DELETE command...")
+            send_command(sock, bulk_delete_command(bulk_keys))
+
+            # Test lookup for deleted keys
+            print("\nTesting LOOKUP for deleted keys (should not find any)...")
+            send_command(sock, bulk_lookup_command(bulk_keys))
 
     except ConnectionRefusedError:
         print(f"Error: Could not connect to server at {SERVER_HOST}:{SERVER_PORT}")

@@ -45,6 +45,7 @@ pub fn delete_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
                 value: None,
                 error: Some("No key provided for delete.".to_string()),
             },
+            // Returns the deleted keys
             CommandArgs::Many(pairs) => {
                 let mut db_write = db.write().await;
                 let mut results = vec![];
@@ -53,12 +54,6 @@ pub fn delete_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
                         if db_write.remove(&key).is_some() {
                             results.push(key);
                         }
-                    } else {
-                        return Ok(NetResponse {
-                            action: NetActions::Error,
-                            value: None,
-                            error: Some("Missing key in bulk delete.".to_string()),
-                        });
                     }
                 }
                 NetResponse {

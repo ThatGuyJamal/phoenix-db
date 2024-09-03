@@ -3,6 +3,7 @@ mod net;
 mod protocol;
 use std::collections::HashMap;
 use std::error::Error;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 use protocol::{DbEngine, DbMetadata};
@@ -14,10 +15,10 @@ use crate::net::handle_stream;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>>
 {
-    let addr = "0.0.0.0:8080";
-    let listener = TcpListener::bind(addr).await?;
+    let socket = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080);
+    let listener = TcpListener::bind(socket).await?;
 
-    println!("Listening on {}", addr);
+    println!("Listening on {}", socket.to_string());
 
     let engine = DbEngine {
         connection: Arc::new(RwLock::new(HashMap::new())),

@@ -7,13 +7,13 @@ use serde_json::Value;
 use tokio::sync::RwLock;
 
 /// Represents the database engine, managing the connection and metadata.
-pub struct DbEngine
+pub struct DbEngine<'a>
 {
     /// The database connection, providing access to the data storage.
     pub connection: Database,
     /// Metadata related to the database, such as version and credentials.
     #[allow(dead_code)] // TODO: Use this field in the future.
-    pub metadata: DbMetadata,
+    pub metadata: DbMetadata<'a>,
 }
 
 /// Type alias for the database, using an `Arc<RwLock<HashMap<DbKey, DbValue>>>` to provide concurrent read/write access.
@@ -27,27 +27,33 @@ pub type DbValue = Value;
 
 /// Represents metadata about the database, including version and credentials.
 #[derive(PartialEq, Debug)]
-pub struct DbMetadata
+pub struct DbMetadata<'a>
 {
     /// The version of the database.
-    version: String,
+    pub version: &'a str,
+    /// The port used for connecting to the database.
+    pub port: u16,
+    /// The remote address to start the server on.
+    pub addr: &'a str,
     /// The username used for accessing the database.
-    username: String,
+    pub username: &'a str,
     /// The password used for accessing the database.
-    password: String,
+    pub password: &'a str,
     /// Flag indicating whether debug mode is enabled.
-    debug_mode: bool,
+    pub debug_mode: bool,
 }
 
-impl Default for DbMetadata
+impl Default for DbMetadata<'_>
 {
     /// Provides a default instance of `DbMetadata` with initial values.
     fn default() -> Self
     {
         DbMetadata {
-            version: "0.0.1".to_string(),
-            username: "root".to_string(),
-            password: "admin".to_string(),
+            version: "0.1.0",
+            port: 6969,
+            addr: "127.0.0.1",
+            username: "root",
+            password: "admin",
             debug_mode: false,
         }
     }
