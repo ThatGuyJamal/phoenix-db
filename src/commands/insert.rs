@@ -25,7 +25,7 @@ pub fn insert_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
     async move {
         let response = match args {
             // Handle single key-value insertion
-            CommandArgs::Single(Some(key), Some(value)) => {
+            CommandArgs::Single(Some(key), Some(value), ..) => {
                 let mut db_write = db.write().await;
                 db_write.insert(key, value);
                 NetResponse {
@@ -35,13 +35,13 @@ pub fn insert_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
                 }
             }
             // Handle case where no key is provided
-            CommandArgs::Single(None, _) => NetResponse {
+            CommandArgs::Single(None, _, ..) => NetResponse {
                 action: NetActions::Error,
                 value: None,
                 error: Some("No key provided for insert.".to_string()),
             },
             // Handle case where no value is provided
-            CommandArgs::Single(_, None) => NetResponse {
+            CommandArgs::Single(_, None, ..) => NetResponse {
                 action: NetActions::Error,
                 value: None,
                 error: Some("No value provided for insert.".to_string()),
@@ -49,20 +49,26 @@ pub fn insert_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
             // Handle bulk insertions
             CommandArgs::Many(args) => {
                 let mut temp_map: HashMap<DbKey, DbValue> = HashMap::new();
-                let mut insert_errors = Vec::new();
+                let mut insert_errors: Vec<String> = Vec::new();
 
                 for a in args {
-                    match (a.key, a.value) {
-                        (Some(key), Some(value)) => {
-                            temp_map.insert(key, value);
+                    match (a.key, a.value, a.ttl) {
+                        (Some(key), Some(value), ..) => {
+                            temp_map.insert(
+                                key,
+                                DbValue {
+                                    value,
+                                    expires_in: a.ttl,
+                                },
+                            );
                         }
-                        (Some(key), None) => {
+                        (Some(key), None, ..) => {
                             insert_errors.push(format!("Missing value for key: {}", key));
                         }
-                        (None, Some(_)) => {
+                        (None, Some(_), ..) => {
                             insert_errors.push("Key is missing for provided value".to_string());
                         }
-                        (None, None) => {
+                        (None, None, ..) => {
                             insert_errors.push("Both key and value are missing".to_string());
                         }
                     }
@@ -102,7 +108,7 @@ mod test
 
     use crate::commands::insert::insert_command;
     use crate::commands::CommandArgs;
-    use crate::protocol::{Database, NetActions};
+    use crate::protocol::{Database, DbValue, NetActions};
 
     // Helper function to create a new in-memory database
     fn create_fake_db() -> Database
@@ -115,9 +121,12 @@ mod test
     {
         let db = create_fake_db();
         let key = "test_key".to_string();
-        let value = json!("test_value");
+        let data = DbValue {
+            value: json!("test_value"),
+            expires_in: None,
+        };
 
-        let args = CommandArgs::Single(Some(key.clone()), Some(value.clone()));
+        let args = CommandArgs::Single(Some(key.clone()), Some(data.clone()));
         let response = insert_command(args, db.clone()).await.unwrap();
 
         // Check that the response indicates success
@@ -127,16 +136,19 @@ mod test
 
         // Check that the value was inserted correctly
         let db_read = db.read().await;
-        assert_eq!(db_read.get(&key), Some(&value));
+        assert_eq!(db_read.get(&key), Some(&data));
     }
 
     #[tokio::test]
     async fn test_single_insert_missing_key()
     {
         let db = create_fake_db();
-        let value = json!("test_value");
+        let data = DbValue {
+            value: json!("test_value"),
+            expires_in: None,
+        };
 
-        let args = CommandArgs::Single(None, Some(value));
+        let args = CommandArgs::Single(None, Some(data));
         let response = insert_command(args, db.clone()).await.unwrap();
 
         // Check that the response indicates an error
@@ -166,17 +178,25 @@ mod test
         let db = create_fake_db();
         let key1 = "key1".to_string();
         let key2 = "key2".to_string();
-        let value1 = json!("value1");
-        let value2 = json!("value2");
+        let data = DbValue {
+            value: json!("value1"),
+            expires_in: None,
+        };
+        let data2 = DbValue {
+            value: json!("value2"),
+            expires_in: None,
+        };
 
         let args = CommandArgs::Many(vec![
             crate::commands::ManyParams {
                 key: Some(key1.clone()),
-                value: Some(value1.clone()),
+                value: Some(data.value.clone()),
+                ttl: None,
             },
             crate::commands::ManyParams {
                 key: Some(key2.clone()),
-                value: Some(value2.clone()),
+                value: Some(data2.value.clone()),
+                ttl: None,
             },
         ]);
 
@@ -189,7 +209,7 @@ mod test
 
         // Check that the values were inserted correctly
         let db_read = db.read().await;
-        assert_eq!(db_read.get(&key1), Some(&value1));
-        assert_eq!(db_read.get(&key2), Some(&value2));
+        assert_eq!(db_read.get(&key1), Some(&data));
+        assert_eq!(db_read.get(&key2), Some(&data2));
     }
 }

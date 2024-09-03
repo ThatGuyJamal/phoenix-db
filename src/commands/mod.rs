@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
+use std::time::Duration;
 
 use futures::future::BoxFuture;
 use once_cell::sync::Lazy;
+use serde_json::Value;
 
 use crate::commands::delete::delete_command;
 use crate::commands::insert::insert_command;
@@ -18,7 +20,8 @@ pub mod lookup;
 pub struct ManyParams
 {
     pub key: Option<DbKey>,
-    pub value: Option<DbValue>,
+    pub value: Option<Value>,
+    pub ttl: Option<Duration>,
 }
 
 /// Represents the arguments that can be passed to a command, either a single key-value pair or multiple pairs.
@@ -84,11 +87,22 @@ async fn execute_command(command_name: &str, args: CommandArgs, db: Database) ->
 /// Returns a `NetResponse` indicating the result of the `INSERT` command.
 async fn handle_insert(keys: Option<Vec<DbKey>>, values: Option<Vec<DbValue>>, db: Database) -> NetResponse
 {
-    if let (Some(key), Some(value)) = (
+    if let (Some(key), Some(data)) = (
         keys.and_then(|k| k.into_iter().next()),
         values.and_then(|v| v.into_iter().next()),
     ) {
-        execute_command("INSERT", CommandArgs::Single(Some(key), Some(value)), db).await
+        execute_command(
+            "INSERT",
+            CommandArgs::Single(
+                Some(key),
+                Some(DbValue {
+                    value: data.value,
+                    expires_in: data.expires_in,
+                }),
+            ),
+            db,
+        )
+        .await
     } else {
         NetResponse {
             action: NetActions::Error,
@@ -109,7 +123,8 @@ async fn handle_insert_bulk(keys: Option<Vec<DbKey>>, values: Option<Vec<DbValue
             .zip(values)
             .map(|(key, value)| ManyParams {
                 key: Some(key),
-                value: Some(value),
+                value: Some(value.value),
+                ttl: value.expires_in,
             })
             .collect();
 
@@ -149,6 +164,7 @@ async fn handle_lookup_bulk(keys: Option<Vec<DbKey>>, db: Database) -> NetRespon
             .map(|key| ManyParams {
                 key: Some(key),
                 value: None,
+                ttl: None,
             })
             .collect();
         execute_command("LOOKUP *", CommandArgs::Many(params), db).await
@@ -187,6 +203,7 @@ async fn handle_delete_bulk(keys: Option<Vec<DbKey>>, db: Database) -> NetRespon
             .map(|key| ManyParams {
                 key: Some(key),
                 value: None,
+                ttl: None,
             })
             .collect();
         execute_command("DELETE *", CommandArgs::Many(params), db).await
@@ -206,7 +223,21 @@ pub async fn handler(command: NetCommand<'_>, db: Database) -> NetResponse
 {
     let command_name = command.name.to_uppercase();
     let keys: Option<Vec<DbKey>> = command.keys.map(|k_list| k_list.into_iter().map(|k| k.to_string()).collect());
-    let values: Option<Vec<DbValue>> = command.values;
+
+    // Map values to DbValue with optional TTL
+    let values: Option<Vec<DbValue>> = if let Some(vals) = command.values {
+        Some(
+            vals.into_iter()
+                .zip(command.ttls.unwrap())  // Handle TTLs
+                .map(|(val, ttl)| DbValue {
+                    value: val.value,
+                    expires_in: Option::from(ttl),  // This now works as expires_in expects Option<Duration>
+                })
+                .collect(),
+        )
+    } else {
+        None
+    };
 
     match command_name.as_str() {
         "INSERT" => handle_insert(keys, values, db).await,

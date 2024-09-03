@@ -4,7 +4,7 @@ use futures::future::BoxFuture;
 use futures::FutureExt;
 
 use crate::commands::CommandArgs;
-use crate::protocol::{Database, DbValue, NetActions, NetResponse};
+use crate::protocol::{Database, JsonValue, NetActions, NetResponse};
 
 /// Executes a delete command on the database.
 ///
@@ -24,7 +24,7 @@ pub fn delete_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
 {
     async move {
         let response = match args {
-            CommandArgs::Single(Some(key), _) => {
+            CommandArgs::Single(Some(key), _, ..) => {
                 let mut db_write = db.write().await;
                 if db_write.remove(&key).is_some() {
                     NetResponse {
@@ -40,7 +40,7 @@ pub fn delete_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
                     }
                 }
             }
-            CommandArgs::Single(None, _) => NetResponse {
+            CommandArgs::Single(None, _, ..) => NetResponse {
                 action: NetActions::Error,
                 value: None,
                 error: Some("No key provided for delete.".to_string()),
@@ -58,7 +58,9 @@ pub fn delete_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
                 }
                 NetResponse {
                     action: NetActions::Command,
-                    value: Some(DbValue::Array(results.into_iter().map(|key| DbValue::String(key)).collect())),
+                    value: Some(JsonValue::Array(
+                        results.into_iter().map(|key| JsonValue::String(key)).collect(),
+                    )),
                     error: None,
                 }
             }
@@ -75,9 +77,11 @@ mod test
     use std::collections::HashMap;
     use std::sync::Arc;
 
+    use serde_json::json;
     use tokio::sync::RwLock;
 
     use super::*;
+    use crate::protocol::DbValue;
 
     // Helper function to create a new in-memory database
     fn create_fake_db() -> Database
@@ -90,11 +94,15 @@ mod test
     {
         let db = create_fake_db();
         let key = "test_key".to_string();
-        let value = DbValue::String("test_value".to_string());
+
+        let data = DbValue {
+            value: json!("test_value"),
+            expires_in: None,
+        };
 
         {
             let mut db_write = db.write().await;
-            db_write.insert(key.clone(), value.clone());
+            db_write.insert(key.clone(), data.clone());
         }
 
         let args = CommandArgs::Single(Some(key.clone()), None);
@@ -143,23 +151,31 @@ mod test
         let db = create_fake_db();
         let key1 = "key1".to_string();
         let key2 = "key2".to_string();
-        let value1 = DbValue::String("value1".to_string());
-        let value2 = DbValue::String("value2".to_string());
+        let data = DbValue {
+            value: json!("value1"),
+            expires_in: None,
+        };
+        let data2 = DbValue {
+            value: json!("value2"),
+            expires_in: None,
+        };
 
         {
             let mut db_write = db.write().await;
-            db_write.insert(key1.clone(), value1.clone());
-            db_write.insert(key2.clone(), value2.clone());
+            db_write.insert(key1.clone(), data.clone());
+            db_write.insert(key2.clone(), data2.clone());
         }
 
         let args = CommandArgs::Many(vec![
             crate::commands::ManyParams {
                 key: Some(key1.clone()),
                 value: None,
+                ttl: None,
             },
             crate::commands::ManyParams {
                 key: Some(key2.clone()),
                 value: None,
+                ttl: None,
             },
         ]);
 
@@ -169,9 +185,9 @@ mod test
         assert_eq!(response.action, NetActions::Command);
         assert_eq!(
             response.value,
-            Some(DbValue::Array(vec![
-                DbValue::String(key1.clone()),
-                DbValue::String(key2.clone())
+            Some(JsonValue::Array(vec![
+                JsonValue::String(key1.clone()),
+                JsonValue::String(key2.clone())
             ]))
         );
         assert!(response.error.is_none());
@@ -187,21 +203,26 @@ mod test
         let db = create_fake_db();
         let key1 = "key1".to_string();
         let key2 = "key2".to_string();
-        let value1 = DbValue::String("value1".to_string());
+        let data = DbValue {
+            value: json!("value1"),
+            expires_in: None,
+        };
 
         {
             let mut db_write = db.write().await;
-            db_write.insert(key1.clone(), value1.clone());
+            db_write.insert(key1.clone(), data.clone());
         }
 
         let args = CommandArgs::Many(vec![
             crate::commands::ManyParams {
                 key: Some(key1.clone()),
                 value: None,
+                ttl: None,
             },
             crate::commands::ManyParams {
                 key: Some(key2.clone()),
                 value: None,
+                ttl: None,
             },
         ]);
 
@@ -209,7 +230,7 @@ mod test
 
         // Check that the response indicates success for the key that was deleted and error for the missing key
         assert_eq!(response.action, NetActions::Command);
-        assert_eq!(response.value, Some(DbValue::Array(vec![DbValue::String(key1.clone()),])));
+        assert_eq!(response.value, Some(JsonValue::Array(vec![JsonValue::String(key1.clone()),])));
         assert!(response.error.is_none());
 
         let db_read = db.read().await;

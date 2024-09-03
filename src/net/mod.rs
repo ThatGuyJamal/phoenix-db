@@ -1,3 +1,5 @@
+pub mod ttl;
+
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
@@ -32,6 +34,7 @@ pub async fn handle_stream(mut stream: TcpStream, db: Database) -> Result<(), St
                 if size == 0 {
                     // Client has disconnected
                     println!("Client disconnected: {}", client_addr);
+
                     return Ok(());
                 }
 

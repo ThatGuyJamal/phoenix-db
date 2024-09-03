@@ -65,6 +65,7 @@ Note: Right now the database is not production ready by any means and is only us
    4.2 Good error handling  
    4.3 Support Different languages (eg. Rust, JavaScript, Python)
 5. Write tests
+   5.1 Test TTL system
 6. Write documentation
 7. Release Alpha version
 

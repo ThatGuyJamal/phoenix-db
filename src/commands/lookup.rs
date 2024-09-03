@@ -3,7 +3,7 @@ use std::error::Error;
 use futures::future::{BoxFuture, FutureExt};
 
 use crate::commands::CommandArgs;
-use crate::protocol::{Database, DbValue, NetActions, NetResponse};
+use crate::protocol::{Database, JsonValue, NetActions, NetResponse};
 
 /// Executes a lookup command on the database.
 ///
@@ -25,12 +25,12 @@ pub fn lookup_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
         // Match on the provided command arguments to determine the appropriate action
         let response = match args {
             // Handle single key lookup
-            CommandArgs::Single(Some(key), _) => {
+            CommandArgs::Single(Some(key), _, ..) => {
                 let db_read = db.read().await;
                 match db_read.get(&key) {
-                    Some(value) => NetResponse {
+                    Some(data) => NetResponse {
                         action: NetActions::Command,
-                        value: Some(value.to_owned()),
+                        value: Some(data.value.to_owned()),
                         error: None,
                     },
                     None => NetResponse {
@@ -41,7 +41,7 @@ pub fn lookup_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
                 }
             }
             // Handle case where no key is provided
-            CommandArgs::Single(None, _) => NetResponse {
+            CommandArgs::Single(None, _, ..) => NetResponse {
                 action: NetActions::Error,
                 value: None,
                 error: Some("No key provided for lookup.".to_string()),
@@ -49,12 +49,12 @@ pub fn lookup_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
             // Handle bulk lookup
             CommandArgs::Many(pairs) => {
                 let db_read = db.read().await;
-                let mut results = vec![];
+                let mut results = Vec::new();
 
                 for pair in pairs {
                     if let Some(key) = pair.key {
-                        if let Some(value) = db_read.get(&key) {
-                            results.push(value.to_owned());
+                        if let Some(data) = db_read.get(&key) {
+                            results.push(data.value.to_owned());
                         }
                     } else {
                         return Ok(NetResponse {
@@ -67,7 +67,7 @@ pub fn lookup_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
 
                 NetResponse {
                     action: NetActions::Command,
-                    value: Some(DbValue::Array(results)),
+                    value: Some(JsonValue::Array(results)),
                     error: None,
                 }
             }
@@ -88,6 +88,7 @@ mod test
     use tokio::sync::RwLock;
 
     use super::*;
+    use crate::protocol::DbValue;
 
     // Helper function to create a new in-memory database
     fn create_fake_db() -> Database
@@ -100,11 +101,14 @@ mod test
     {
         let db = create_fake_db();
         let key = "test_key".to_string();
-        let value = json!("test_value");
+        let data = DbValue {
+            value: json!("test_value"),
+            expires_in: None,
+        };
 
         {
             let mut db_write = db.write().await;
-            db_write.insert(key.clone(), value.clone());
+            db_write.insert(key.clone(), data.clone());
         }
 
         let args = CommandArgs::Single(Some(key.clone()), None);
@@ -112,7 +116,7 @@ mod test
 
         // Check that the response indicates success and returns the correct value
         assert_eq!(response.action, NetActions::Command);
-        assert_eq!(response.value, Some(value));
+        assert_eq!(response.value, Some(data.value));
         assert!(response.error.is_none());
     }
 
@@ -150,8 +154,15 @@ mod test
         let db = create_fake_db();
         let key1 = "key1".to_string();
         let key2 = "key2".to_string();
-        let value1 = json!("value1");
-        let value2 = json!("value2");
+        let value1 = DbValue {
+            value: json!("value1"),
+            expires_in: None,
+        };
+
+        let value2 = DbValue {
+            value: json!("value2"),
+            expires_in: None,
+        };
 
         {
             let mut db_write = db.write().await;
@@ -163,10 +174,12 @@ mod test
             crate::commands::ManyParams {
                 key: Some(key1.clone()),
                 value: None,
+                ttl: None,
             },
             crate::commands::ManyParams {
                 key: Some(key2.clone()),
                 value: None,
+                ttl: None,
             },
         ]);
 
@@ -174,7 +187,7 @@ mod test
 
         // Check that the response indicates success and returns the correct values
         assert_eq!(response.action, NetActions::Command);
-        assert_eq!(response.value, Some(DbValue::Array(vec![value1, value2])));
+        assert_eq!(response.value, Some(JsonValue::Array(vec![value1.value, value2.value])));
         assert!(response.error.is_none());
     }
 
@@ -183,7 +196,10 @@ mod test
     {
         let db = create_fake_db();
         let key1 = "key1".to_string();
-        let value1 = json!("value1");
+        let value1 = DbValue {
+            value: json!("value1"),
+            expires_in: None,
+        };
 
         {
             let mut db_write = db.write().await;
@@ -194,8 +210,13 @@ mod test
             crate::commands::ManyParams {
                 key: Some(key1.clone()),
                 value: None,
+                ttl: None,
             },
-            crate::commands::ManyParams { key: None, value: None },
+            crate::commands::ManyParams {
+                key: None,
+                value: None,
+                ttl: None,
+            },
         ]);
 
         let response = lookup_command(args, db.clone()).await.unwrap();
@@ -206,11 +227,12 @@ mod test
         assert_eq!(response.error, Some("Missing key in bulk lookup.".to_string()));
 
         // Check that only valid lookups were successful
-        let expected_value = DbValue::Array(vec![value1]);
+        let expected_value = JsonValue::Array(vec![value1.value]);
         let response = lookup_command(
             CommandArgs::Many(vec![crate::commands::ManyParams {
                 key: Some(key1),
                 value: None,
+                ttl: None,
             }]),
             db.clone(),
         )
