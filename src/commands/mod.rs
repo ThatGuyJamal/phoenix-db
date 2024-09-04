@@ -228,7 +228,7 @@ pub async fn handler(command: NetCommand<'_>, db: Database) -> NetResponse
     let values: Option<Vec<DbValue>> = if let Some(vals) = command.values {
         Some(
             vals.into_iter()
-                .zip(command.ttls.unwrap())  // Handle TTLs
+                .zip(command.ttls.unwrap_or(Vec::new()))  // Handle TTLs
                 .map(|(val, ttl)| DbValue {
                     value: val.value,
                     expires_in: Option::from(ttl),  // This now works as expires_in expects Option<Duration>

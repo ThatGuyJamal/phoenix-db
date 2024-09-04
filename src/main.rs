@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
         metadata: DbMetadata::default(),
     });
 
-    let (tx, mut rx) = mpsc::channel(32);
+    let (tx, mut rx) = mpsc::channel(1024);
 
     // Spawn cleanup task
     let engine_clone = engine.clone();
