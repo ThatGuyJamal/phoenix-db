@@ -17,7 +17,7 @@ pub mod insert;
 pub mod lookup;
 
 /// Represents parameters for commands that require multiple keys and values.
-pub struct ManyParams
+pub struct CommandParams
 {
     pub key: Option<DbKey>,
     pub value: Option<Value>,
@@ -28,7 +28,7 @@ pub struct ManyParams
 pub enum CommandArgs
 {
     Single(Option<DbKey>, Option<DbValue>),
-    Many(Vec<ManyParams>),
+    Many(Vec<CommandParams>),
 }
 
 /// Trait that defines the interface for executing commands.
@@ -118,10 +118,10 @@ async fn handle_insert(keys: Option<Vec<DbKey>>, values: Option<Vec<DbValue>>, d
 async fn handle_insert_bulk(keys: Option<Vec<DbKey>>, values: Option<Vec<DbValue>>, db: Database) -> NetResponse
 {
     if let (Some(keys), Some(values)) = (keys, values) {
-        let params: Vec<ManyParams> = keys
+        let params: Vec<CommandParams> = keys
             .into_iter()
             .zip(values)
-            .map(|(key, value)| ManyParams {
+            .map(|(key, value)| CommandParams {
                 key: Some(key),
                 value: Some(value.value),
                 ttl: value.expires_in,
@@ -159,9 +159,9 @@ async fn handle_lookup(keys: Option<Vec<DbKey>>, db: Database) -> NetResponse
 async fn handle_lookup_bulk(keys: Option<Vec<DbKey>>, db: Database) -> NetResponse
 {
     if let Some(keys) = keys {
-        let params: Vec<ManyParams> = keys
+        let params: Vec<CommandParams> = keys
             .into_iter()
-            .map(|key| ManyParams {
+            .map(|key| CommandParams {
                 key: Some(key),
                 value: None,
                 ttl: None,
@@ -198,9 +198,9 @@ async fn handle_delete(keys: Option<Vec<DbKey>>, db: Database) -> NetResponse
 async fn handle_delete_bulk(keys: Option<Vec<DbKey>>, db: Database) -> NetResponse
 {
     if let Some(keys) = keys {
-        let params: Vec<ManyParams> = keys
+        let params: Vec<CommandParams> = keys
             .into_iter()
-            .map(|key| ManyParams {
+            .map(|key| CommandParams {
                 key: Some(key),
                 value: None,
                 ttl: None,

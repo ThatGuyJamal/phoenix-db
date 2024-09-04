@@ -171,12 +171,12 @@ mod test
         }
 
         let args = CommandArgs::Many(vec![
-            crate::commands::ManyParams {
+            crate::commands::CommandParams {
                 key: Some(key1.clone()),
                 value: None,
                 ttl: None,
             },
-            crate::commands::ManyParams {
+            crate::commands::CommandParams {
                 key: Some(key2.clone()),
                 value: None,
                 ttl: None,
@@ -207,12 +207,12 @@ mod test
         }
 
         let args = CommandArgs::Many(vec![
-            crate::commands::ManyParams {
+            crate::commands::CommandParams {
                 key: Some(key1.clone()),
                 value: None,
                 ttl: None,
             },
-            crate::commands::ManyParams {
+            crate::commands::CommandParams {
                 key: None,
                 value: None,
                 ttl: None,
@@ -229,7 +229,7 @@ mod test
         // Check that only valid lookups were successful
         let expected_value = JsonValue::Array(vec![value1.value]);
         let response = lookup_command(
-            CommandArgs::Many(vec![crate::commands::ManyParams {
+            CommandArgs::Many(vec![crate::commands::CommandParams {
                 key: Some(key1),
                 value: None,
                 ttl: None,

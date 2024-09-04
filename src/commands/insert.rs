@@ -188,12 +188,12 @@ mod test
         };
 
         let args = CommandArgs::Many(vec![
-            crate::commands::ManyParams {
+            crate::commands::CommandParams {
                 key: Some(key1.clone()),
                 value: Some(data.value.clone()),
                 ttl: None,
             },
-            crate::commands::ManyParams {
+            crate::commands::CommandParams {
                 key: Some(key2.clone()),
                 value: Some(data2.value.clone()),
                 ttl: None,

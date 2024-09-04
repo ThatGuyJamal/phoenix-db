@@ -167,12 +167,12 @@ mod test
         }
 
         let args = CommandArgs::Many(vec![
-            crate::commands::ManyParams {
+            crate::commands::CommandParams {
                 key: Some(key1.clone()),
                 value: None,
                 ttl: None,
             },
-            crate::commands::ManyParams {
+            crate::commands::CommandParams {
                 key: Some(key2.clone()),
                 value: None,
                 ttl: None,
@@ -214,12 +214,12 @@ mod test
         }
 
         let args = CommandArgs::Many(vec![
-            crate::commands::ManyParams {
+            crate::commands::CommandParams {
                 key: Some(key1.clone()),
                 value: None,
                 ttl: None,
             },
-            crate::commands::ManyParams {
+            crate::commands::CommandParams {
                 key: Some(key2.clone()),
                 value: None,
                 ttl: None,
