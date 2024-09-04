@@ -84,8 +84,8 @@ pub fn insert_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
                     }
                 } else {
                     NetResponse {
-                        action: NetActions::Command,
-                        value: Some("OK".to_string().into()),
+                        action: NetActions::Error,
+                        value: None,
                         error: Some(insert_errors.join(", ")),
                     }
                 }
@@ -94,7 +94,7 @@ pub fn insert_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
 
         Ok(response)
     }
-    .boxed()
+        .boxed()
 }
 
 #[cfg(test)]
