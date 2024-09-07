@@ -24,7 +24,7 @@ pub fn delete_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
 {
     async move {
         let response = match args {
-            CommandArgs::Single(Some(key), _, ..) => {
+            CommandArgs::Single(Some(key), ..) => {
                 let mut db_write = db.write().await;
                 if db_write.remove(&key).is_some() {
                     NetResponse {
@@ -40,7 +40,7 @@ pub fn delete_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
                     }
                 }
             }
-            CommandArgs::Single(None, _, ..) => NetResponse {
+            CommandArgs::Single(None, ..) => NetResponse {
                 action: NetActions::Error,
                 value: None,
                 error: Some("No key provided for delete.".to_string()),
@@ -68,7 +68,7 @@ pub fn delete_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
 
         Ok(response)
     }
-    .boxed()
+        .boxed()
 }
 
 #[cfg(test)]
@@ -230,7 +230,7 @@ mod test
 
         // Check that the response indicates success for the key that was deleted and error for the missing key
         assert_eq!(response.action, NetActions::Command);
-        assert_eq!(response.value, Some(JsonValue::Array(vec![JsonValue::String(key1.clone()),])));
+        assert_eq!(response.value, Some(JsonValue::Array(vec![JsonValue::String(key1.clone()), ])));
         assert!(response.error.is_none());
 
         let db_read = db.read().await;

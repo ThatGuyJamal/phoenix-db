@@ -51,10 +51,9 @@ Note: Right now the database is not production ready by any means and is only us
 
 ## Implementation
 
-1. Build the TCP protocol  
-   1.1 Data versioning
+1. Build the TCP protocol
 2. Build the TCP server  
-   2.1 Command handling  
+   ~~2.1 Command handling~~   
    2.2 TLS support
 3. Build the CLI server  
    3.1 Support all native commands

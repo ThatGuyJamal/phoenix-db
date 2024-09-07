@@ -25,7 +25,7 @@ pub fn insert_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
     async move {
         let response = match args {
             // Handle single key-value insertion
-            CommandArgs::Single(Some(key), Some(value), ..) => {
+            CommandArgs::Single(Some(key), Some(value)) => {
                 let mut db_write = db.write().await;
                 db_write.insert(key, value);
                 NetResponse {
@@ -35,13 +35,13 @@ pub fn insert_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
                 }
             }
             // Handle case where no key is provided
-            CommandArgs::Single(None, _, ..) => NetResponse {
+            CommandArgs::Single(None, ..) => NetResponse {
                 action: NetActions::Error,
                 value: None,
                 error: Some("No key provided for insert.".to_string()),
             },
             // Handle case where no value is provided
-            CommandArgs::Single(_, None, ..) => NetResponse {
+            CommandArgs::Single(_, None) => NetResponse {
                 action: NetActions::Error,
                 value: None,
                 error: Some("No value provided for insert.".to_string()),
@@ -94,7 +94,7 @@ pub fn insert_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
 
         Ok(response)
     }
-    .boxed()
+        .boxed()
 }
 
 #[cfg(test)]

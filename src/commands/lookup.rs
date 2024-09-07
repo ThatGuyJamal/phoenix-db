@@ -25,7 +25,7 @@ pub fn lookup_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
         // Match on the provided command arguments to determine the appropriate action
         let response = match args {
             // Handle single key lookup
-            CommandArgs::Single(Some(key), _, ..) => {
+            CommandArgs::Single(Some(key), ..) => {
                 let db_read = db.read().await;
                 match db_read.get(&key) {
                     Some(data) => NetResponse {
@@ -41,7 +41,7 @@ pub fn lookup_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
                 }
             }
             // Handle case where no key is provided
-            CommandArgs::Single(None, _, ..) => NetResponse {
+            CommandArgs::Single(None, ..) => NetResponse {
                 action: NetActions::Error,
                 value: None,
                 error: Some("No key provided for lookup.".to_string()),
@@ -75,7 +75,7 @@ pub fn lookup_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
 
         Ok(response)
     }
-    .boxed()
+        .boxed()
 }
 
 #[cfg(test)]
@@ -236,8 +236,8 @@ mod test
             }]),
             db.clone(),
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
 
         assert_eq!(response.value, Some(expected_value));
     }

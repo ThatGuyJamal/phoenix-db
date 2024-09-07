@@ -1,31 +1,37 @@
+mod cli;
 mod commands;
 mod net;
 mod protocol;
 
 use std::collections::HashMap;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use protocol::{DbEngine, DbMetadata};
+use clap::Parser;
+use protocol::DbEngine;
 use tokio::net::TcpListener;
 use tokio::sync::{mpsc, RwLock};
 
+use crate::cli::Cli;
 use crate::net::handle_stream;
 use crate::net::ttl::cleanup_task;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>>
 {
-    let socket = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080);
-    let listener = TcpListener::bind(socket).await?;
+    // Parse CLI arguments
+    let args = Cli::parse();
 
-    println!("Listening on {}", socket.to_string());
+    let socket = SocketAddr::new(args.addr.parse().unwrap(), args.port);
 
     let engine = Arc::new(DbEngine {
         connection: Arc::new(RwLock::new(HashMap::new())),
-        metadata: DbMetadata::default(),
+        db_config: args,
     });
+
+    let listener = TcpListener::bind(socket).await?;
+    println!("Listening on {}", socket.to_string());
 
     let (tx, mut rx) = mpsc::channel(1024);
 
