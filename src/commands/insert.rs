@@ -94,7 +94,7 @@ pub fn insert_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
 
         Ok(response)
     }
-        .boxed()
+    .boxed()
 }
 
 #[cfg(test)]

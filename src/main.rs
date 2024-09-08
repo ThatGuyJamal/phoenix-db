@@ -1,21 +1,21 @@
 mod cli;
 mod commands;
-mod net;
 mod protocol;
 
+mod services;
+
+mod server;
+
 use std::collections::HashMap;
-use std::net::SocketAddr;
 use std::sync::Arc;
-use std::time::Duration;
 
 use clap::Parser;
 use protocol::DbEngine;
-use tokio::net::TcpListener;
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::RwLock;
+use tracing::Level;
+use tracing_subscriber::FmtSubscriber;
 
 use crate::cli::Cli;
-use crate::net::handle_stream;
-use crate::net::ttl::cleanup_task;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>>
@@ -23,34 +23,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     // Parse CLI arguments
     let args = Cli::parse();
 
-    let socket = SocketAddr::new(args.addr.parse().unwrap(), args.port);
+    // Convert log level string to `tracing::Level`
+    let log_level = match args.log_level.to_lowercase().as_str() {
+        "error" => Level::ERROR,
+        "warn" => Level::WARN,
+        "info" => Level::INFO,
+        "debug" => Level::DEBUG,
+        "trace" => Level::TRACE,
+        _ => Level::INFO, // Default to INFO if the input is invalid
+    };
+
+    let subscriber = FmtSubscriber::builder().with_max_level(log_level).finish();
+
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
     let engine = Arc::new(DbEngine {
         connection: Arc::new(RwLock::new(HashMap::new())),
-        db_config: args,
+        db_config: args.clone(),
     });
 
-    let listener = TcpListener::bind(socket).await?;
-    println!("Listening on {}", socket.to_string());
+    services::execute(engine.clone()).await?;
+    server::execute(&args, &engine).await?;
 
-    let (tx, mut rx) = mpsc::channel(1024);
-
-    // Spawn cleanup task
-    let engine_clone = engine.clone();
-    tokio::spawn(async move {
-        cleanup_task(engine_clone.connection.clone(), Duration::from_secs(60)).await;
-    });
-
-    // Spawn task to handle streams
-    tokio::spawn(async move {
-        while let Some((stream, db)) = rx.recv().await {
-            tokio::spawn(handle_stream(stream, db));
-        }
-    });
-
-    // Main loop to accept connections and send to channel
-    loop {
-        let (stream, _) = listener.accept().await?;
-        tx.send((stream, engine.connection.clone())).await?;
-    }
+    Ok(())
 }

@@ -75,7 +75,7 @@ pub fn lookup_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
 
         Ok(response)
     }
-        .boxed()
+    .boxed()
 }
 
 #[cfg(test)]
@@ -236,8 +236,8 @@ mod test
             }]),
             db.clone(),
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
 
         assert_eq!(response.value, Some(expected_value));
     }

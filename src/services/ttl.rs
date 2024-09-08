@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use tokio::time::{interval, Instant};
+use tracing::debug;
 
 use crate::protocol::Database;
 
@@ -18,9 +19,10 @@ use crate::protocol::Database;
 ///
 /// * `db` - A reference to the database instance (`Database`) that the cleanup task operates on.
 /// * `check_interval` - The duration to wait between each cleanup iteration.
-pub async fn cleanup_task(db: Database, check_interval: Duration)
+pub async fn execute(db: Database, check_interval: Duration)
 {
     let mut interval = interval(check_interval);
+    let mut started = 0;
 
     loop {
         interval.tick().await;
@@ -34,5 +36,12 @@ pub async fn cleanup_task(db: Database, check_interval: Duration)
             // Keep non-expired entries
             _ => true,
         });
+
+        if started == 0 {
+            debug!("Starting TTL Service");
+            started = 1;
+        } else {
+            debug!("TTL Service Ticked")
+        }
     }
 }

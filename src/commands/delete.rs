@@ -68,7 +68,7 @@ pub fn delete_command(args: CommandArgs, db: Database) -> BoxFuture<'static, Res
 
         Ok(response)
     }
-        .boxed()
+    .boxed()
 }
 
 #[cfg(test)]
@@ -230,7 +230,7 @@ mod test
 
         // Check that the response indicates success for the key that was deleted and error for the missing key
         assert_eq!(response.action, NetActions::Command);
-        assert_eq!(response.value, Some(JsonValue::Array(vec![JsonValue::String(key1.clone()), ])));
+        assert_eq!(response.value, Some(JsonValue::Array(vec![JsonValue::String(key1.clone()),])));
         assert!(response.error.is_none());
 
         let db_read = db.read().await;

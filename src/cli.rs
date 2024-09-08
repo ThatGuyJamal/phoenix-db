@@ -1,7 +1,7 @@
 use clap::Parser;
 
 /// Represents the command-line arguments for the server configuration
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[command(name = "Server Engine")]
 #[command(about = "A CLI for the server engine", long_about = None)]
 pub struct Cli
@@ -25,4 +25,8 @@ pub struct Cli
     /// Enable debug mode
     #[arg(short = 'd', long, default_value_t = false)]
     pub(crate) debug_mode: bool,
+
+    /// Log level (error, warn, info, debug, trace)
+    #[arg(short = 'l', long, default_value = "info")]
+    pub(crate) log_level: String,
 }
