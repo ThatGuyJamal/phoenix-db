@@ -3,73 +3,55 @@
 ## Table of Contents
 
 - [Overview](#overview)
-- [Requirements](#requirements)
-- [Goals](#goals)
+- [Build Requirements](#build-requirements)
+- [Features](#features)
 - [Design](#design)
 - [Commands](#commands)
-- [Implementation](#implementation)
+- [Roadmap](#roadmap)
 - [Release](#release)
 
 ## Overview
 
-Phoenix DB is a key-value databases developed by [CodingWithJamal](https://codingwithjamal.vercel.app) as an exericse to
+Phoenix DB is a key-value databases developed by [CodingWithJamal](https://codingwithjamal.vercel.app) as an exercise to
 learn computer science
 algorithms and research system level programming.
 
-Note: Right now the database is not production ready by any means and is only used for learning purposes.
-
-## Requirements
+## Build Requirements
 
 - [Rust](https://www.rust-lang.org)
 
-## Goals
+## Features
 
-- `Memory` - Store data in memory
-- `Disk` - Store data on disk
-- `TCP` - Use a TPC protocol for communication with clients
-- `tls` - Time to live for data
-- `Threads` - Use threads for concurrency and parallelism
+- [Key-Value Store](https://en.wikipedia.org/wiki/Key-value_stores)
+- [Async IO](https://tokio.rs/)
+- [TTL Data](https://en.wikipedia.org/wiki/Time-to-live)
+- [Multithreaded](https://en.wikipedia.org/wiki/Multithreaded_programming)
+- [CLI](https://en.wikipedia.org/wiki/Command-line_interface)
 
 ## Design
 
-- `Client` - A client that connects to the database
-- `Server` - A server that runs the database
+- `Client` - Any program that implement's the database network protocol
+- `Server` - The database host and manager program
 
 # Commands
 
-- `INSERT key value` - Set the value of a key
-    - `INSERT *` - Allows multiple data inserts in one request using an array
-- `LOOKUP key` - Get the value of a key
-    - `LOOPUP *` - Gets all the keys in the database
-- `DELETE key` - Delete the value of a key
-    - `DELETE *` - Deletes all the data in the database
+- `INSERT`
+- `INSERT *`
+- `LOOKUP`
+- `LOOKUP *`
+- `DELETE`
+- `DELETE *`
+- `CREATE`
+- `DESTROY`
+- `EXIT`
 
-- `CREATE` - Create a new database
-- `DESTROY` - Destroy a database
-- `EXIT` - Exit the database
-- `HELP` - List all commands
+## Roadmap
 
-## Implementation
-
-1. Build the TCP protocol
-2. Build the TCP server  
-   ~~2.1 Command handling~~   
-   2.2 TLS support
-3. Build the CLI server  
-   3.1 Support all native commands
-   3.2 Support Repl (Read Evaluate Print Loop)
-   3.3 Support DB passwords using a local file
-4. Build the TCP client  
-   4.1 Command API wrapper  
-   4.2 Good error handling  
-   4.3 Support Different languages (eg. Rust, JavaScript, Python)
-5. Write tests
-   5.1 Test TTL system
-6. Write documentation
-7. Release Alpha version
+[View here](https://github.com/users/ThatGuyJamal/projects/6/views/1?layout=board)
 
 ## Release
 
-Releasing this database to project will involve some work. The easist way to allow users to install the database is to
+Releasing this database to project will involve some work. The easiest way to allow devs to try the database is to
 use the [cargo install](https://doc.rust-lang.org/cargo/commands/cargo-install.html) command. This will give the user a
 CLI to run the database after cargo builds the binary application.
+
